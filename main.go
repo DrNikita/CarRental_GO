@@ -74,7 +74,29 @@ func (r *Repository) GetCars(context *fiber.Ctx) error {
 	return nil
 }
 
-func (r *Repository) DeleteCar(context *fiber.Ctx)  {}
+func (r *Repository) DeleteCar(context *fiber.Ctx) error {
+	carModel := models.Cars{}
+	id := context.Params("id")
+	if id == "" {
+		context.Status(http.StatusInternalServerError).JSON(&fiber.Map{
+			"message": "id cannot be empty",
+		})
+		return nil
+	}
+	err := r.DB.Delete(carModel, id)
+
+	if err.Error != nil {
+		context.Status(fiber.StatusBadRequest).JSON(&fiber.Map{
+			"message": "could not delete car",
+		})
+		return err.Error
+	}
+	context.Status(fiber.StatusOK).JSON(&fiber.Map{
+		"message": "car delete successfully",
+	})
+	return nil
+}
+
 func (r *Repository) GetCarById(context *fiber.Ctx) {}
 
 func main() {
@@ -90,6 +112,17 @@ func main() {
 		Password: os.Getenv("DB_PASS"),
 		DBName:   os.Getenv("DB_NAME"),
 		SSLMode:  os.Getenv("DB_SSLMODE"),
+	}
+
+	db, err := storage.NewConnection(config)
+
+	if err != nil {
+		log.Fatal("Could not load the database")
+	}
+
+	err = models.MigrateCars(db)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	r := Repository{
