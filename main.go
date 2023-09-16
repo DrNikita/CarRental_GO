@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -77,6 +78,7 @@ func (r *Repository) GetCars(context *fiber.Ctx) error {
 func (r *Repository) DeleteCar(context *fiber.Ctx) error {
 	carModel := models.Cars{}
 	id := context.Params("id")
+
 	if id == "" {
 		context.Status(http.StatusInternalServerError).JSON(&fiber.Map{
 			"message": "id cannot be empty",
@@ -97,10 +99,34 @@ func (r *Repository) DeleteCar(context *fiber.Ctx) error {
 	return nil
 }
 
-func (r *Repository) GetCarById(context *fiber.Ctx) {}
+func (r *Repository) GetCarById(context *fiber.Ctx) error {
+	carModel := &models.Cars{}
+	id := context.Params("id")
+
+	if id == "" {
+		context.Status(http.StatusInternalServerError).JSON(&fiber.Map{
+			"message": "id cannot be empty",
+		})
+		return nil
+	}
+
+	fmt.Println("the ID is ", id)
+
+	err := r.DB.Where("id = ?", id).First(carModel).Error
+	if err != nil {
+		context.Status(http.StatusBadRequest).JSON(
+			&fiber.Map{"message": "could not get the car"})
+		return err
+	}
+	context.Status(http.StatusOK).JSON(&fiber.Map{
+		"message": "car id fetched successfully",
+		"data":    carModel,
+	})
+	return nil
+}
 
 func main() {
-	err := godotenv.Load(".env")
+	err := godotenv.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,7 +140,7 @@ func main() {
 		SSLMode:  os.Getenv("DB_SSLMODE"),
 	}
 
-	db, err := storage.NewConnection(config)
+	db, err := storage.Connect(config)
 
 	if err != nil {
 		log.Fatal("Could not load the database")
