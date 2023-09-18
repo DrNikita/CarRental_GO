@@ -1,4 +1,4 @@
-CREATE TABLE public.cars (
+CREATE TABLE IF NOT EXISTS public.cars (
   id int8 NOT NULL,
   govnum varchar NULL,
   brand varchar NULL,
