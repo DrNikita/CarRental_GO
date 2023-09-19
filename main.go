@@ -17,6 +17,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// DB connectiong....
 	config := &storage.Config{
 		Host:     os.Getenv("DB_HOST"),
 		Port:     os.Getenv("DB_PORT"),
@@ -31,18 +32,25 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not load the database")
 	}
+	// connected successfully)
 
 	err = models.MigrateCars(db)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	r := repository.CarsRepository{
-		DB: db,
+	err = models.MigrateRoles(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = models.MigrateUsers(db)
+	if err != nil {
+		log.Fatal(err)
 	}
 
+	carsRepo := repository.CarsRepository{DB: db}
+
 	app := fiber.New()
-	r.SetupRoutes(app)
+	carsRepo.SetupRoutes(app)
 
 	app.Listen(":8080")
 }
